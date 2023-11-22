@@ -31,7 +31,7 @@ dark_theme_layout = {
 pio.templates["darkly"] = go.layout.Template(layout=dark_theme_layout)
 pio.templates.default = "darkly"
 
-df_UK = pd.read_csv("../src/athlete_events.csv").query("NOC == 'GBR'")
+df_UK = pd.read_csv("athlete_events.csv").query("NOC == 'GBR'")
 
 gb_rowing = df_UK[df_UK['Sport'] == 'Rowing']
 gb_cycling = df_UK[df_UK['Sport'] == 'Cycling']

@@ -119,57 +119,41 @@ gb_athletes_table = dash_table.DataTable(
 )
 
 
-app.layout = html.Div([
-    dcc.Dropdown(
-        id='athlete-search-dropdown',
-        options=[{'label': name, 'value': name} for name in athlete_names],
-        placeholder="Search for an athlete",
-        style={'width': '300px', 'position': 'absolute', 'top': '10px', 'right': '10px'},
-        searchable=True,
-        clearable=True,
-    ),
- #   profile_modal, # fick ett error här så kommenterar bort atm.
-])
-# Skapa en bakgrund med brittiska flaggan
-
 app.layout = dbc.Container([
-    # Background image
-    html.Div([
-        html.Img(src='/assets/UK-flag.png', style={
+        html.Div([
+        html.Img(src='/assets/UK-flag.png',
+                style={
             "position": "absolute",
             "left": "0",
-            "opacity": "0.4",
+            "opacity": "0.2",
             "width": "100%",
-            "height": "120%",
-            "background-repeat": "repeat",
-        }),
-    ]),
-
-    # Header row
+            "height": "100%",
+                }
+            )
+        ]),
     dbc.Row([
-        dbc.Col([
-            html.Div([
-                html.Img(src='/assets/UK-flag.png',
-                    style={
-                        "width": "100%",
-                        "opacity" : "1",
-                    }
-                )
-            ],),
-        ], width=3),
-        dbc.Col(width=3),
-        dbc.Col([
-            html.H1("Great Britain - Olympic Games", 
-                className="text-center text-primary mt-4", 
-                style={"font-size": "3rem", "font-weight": "bold", "color": "#FEFEFE", "opacity": "1"}
-            ),
-        ], width=6),
-        dbc.Col([
-            html.Div([
-                html.Img(src='/assets/os_flagga.jpg', style={"width": "100%"}),
-            ]),
-        ], width=3),
-    ]),
+            dbc.Col([
+                html.Div([
+                    html.Img(src='/assets/UK-flag.png',
+                        style={
+                            "width": "100%"
+                        }
+                    )
+                ]),
+            ], width=3),
+            dbc.Col([
+                html.H1("UK - Olympic Games",
+                    style={"opacity": "200%",
+                        "color": "#fff",
+                        "text-align": "center",}, 
+                ),
+            ], width=6),
+            dbc.Col([
+                html.Div([
+                    html.Img(src='/assets/os_flagga.jpg', style={"width": "100%"}),
+                ]),
+            ], width=3),
+        ], style={"opacity": "1"}),
 
     # Row for the athletes table
     dbc.Row([
@@ -177,11 +161,24 @@ app.layout = dbc.Container([
             gb_athletes_table
         ], width=12)
     ]),
+    dcc.Dropdown(
+            id='athlete-search-dropdown',
+            options=[{'label': name, 'value': name} for name in athlete_names],
+            placeholder="Search for an athlete",
+            style={'width': '300px',
+                'position': 'absolute',
+                'top': '10px',
+                'right': '10px',
+                'color': '#333'},
+            searchable=True,
+            clearable=True,
+    ),
 
         dcc.Dropdown(
     id='country-dropdown',
     options=[{'label': row['NOC'], 'value': row['NOC']} for index, row in df_medal_counts.iterrows()],
-    value='GBR' 
+    value='GBR',
+    style={"color": "#333"}
     ),
 
     html.Div(id='country-medal-profile'),
@@ -192,7 +189,7 @@ app.layout = dbc.Container([
             dcc.Dropdown(
                 id="single_dropdown", 
                 multi=True, 
-                searchable=False, 
+                searchable=True, 
                 className="mb-1",
                 options=[{'label': sport, 'value': sport} for sport in medal_trend_df],
                 style={"color": "#333"}
@@ -206,21 +203,7 @@ app.layout = dbc.Container([
             )
         ], width=12),
     ]),
-    
-    # dbc.Row([
-    #     dbc.Col([
-    #         dash_table.DataTable(
-    #             #stocks.to_dict("records"), 
-    #             #id="stock_table", 
-    #             #columns=[{"name": i, "id": i} for i in stocks.columns], 
-    #             page_size=10, 
-    #             style_cell={"textAlign": "left", "backgroundColor": "#333", "color": "#fff"}, 
-    #             style_header={"backgroundColor": "#333", "color": "#fff"}, 
-    #             style_data={"backgroundColor": "#333", "color": "#fff"}
-#                 ),
-#         ], width=6)
-#     ]),
-    ])
+])
 
 medal_trend_fig = px.line(medal_trend_df, 
     x=medal_trend_df.index,

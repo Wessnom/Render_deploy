@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import pandas as pd
 from plotly.subplots import make_subplots
 
-athlete_events = pd.read_csv("Render_deploy/src/data/athlete_events.csv")
+athlete_events = pd.read_csv("athlete_events.csv")
 UK_athletes = athlete_events[athlete_events['NOC'] == 'GBR']
 
 def prepare_data_and_plots():

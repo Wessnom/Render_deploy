@@ -20,13 +20,11 @@ import plotly.io as pio
 
 from plot_data import prepare_data_and_plots, seasonal_graph, age_data
 
-# Försöker ändra utseendet på alla px grafer
 dark_theme_layout = {
     "plot_bgcolor": "#343a40",
     "paper_bgcolor": "#343a40",
     "font": {"color": "#ffffff"},
     "title": {"x": 0.5, "xanchor":"center"},
-    # Finns fler saker att ändra om vi vill
 }
 pio.templates["darkly"] = go.layout.Template(layout=dark_theme_layout)
 pio.templates.default = "darkly"
@@ -38,6 +36,18 @@ gb_rowing = df_UK[df_UK['Sport'] == 'Rowing']
 gb_cycling = df_UK[df_UK['Sport'] == 'Cycling']
 gb_sailing = df_UK[df_UK['Sport'] == 'Sailing']
 gb_athletics = df_UK[df_UK['Sport'] == 'Athletics']
+
+pre_ww1 = df_UK[df_UK['Year'] < 1914]
+between_wars = df_UK[(df_UK['Year'] >= 1914) & (df_UK['Year'] < 1945)]
+post_ww2_pre_2000 = df_UK[(df_UK['Year'] >= 1945) & (df_UK['Year'] < 2000)]
+post_2000 = df_UK[df_UK['Year'] >= 2000]
+
+dfs = {
+    'pre_ww1': pre_ww1,
+    'between_wars': between_wars,
+    'post_ww2_pre_2000': post_ww2_pre_2000,
+    'post_2000': post_2000
+}
 
 medal_trend_rowing = gb_rowing.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
 medal_trend_cycling = gb_cycling.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
@@ -69,18 +79,14 @@ athlete_names = df_all_countries['Name'].unique()
 
 
 df_medals = df_all_countries.dropna(subset=['Medal'])
-
 df_medal_counts = df_medals.pivot_table(index='NOC', columns='Medal', aggfunc='size', fill_value=0)
-
 df_medal_counts.columns = ['Bronze', 'Silver', 'Gold']
-
 df_medal_counts.reset_index(inplace=True)
-        
 medal_summary = pd.DataFrame(medal_summary)
 
 medal_trend_df = pd.DataFrame({'Rowing': medal_trend_rowing,
                             'Cycling': medal_trend_cycling,
-                            'Football': medal_trend_sailing,
+                            'Sailing': medal_trend_sailing,
                             'Athletics': medal_trend_athletics}).fillna(0)
 
 app = Dash(__name__,
@@ -146,7 +152,8 @@ app.layout = dbc.Container([
                 html.H1("UK - Olympic Games",
                     style={"opacity": "200%",
                         "color": "#fff",
-                        "text-align": "center",}, 
+                        "text-align": "center",
+                        "top": "50%",}, 
                 ),
             ], width=6),
             dbc.Col([
@@ -162,29 +169,30 @@ app.layout = dbc.Container([
             gb_athletes_table
         ], width=12)
     ]),
-    dcc.Dropdown(
-            id='athlete-search-dropdown',
-            options=[{'label': name, 'value': name} for name in athlete_names],
-            placeholder="Search for an athlete",
-            style={'width': '300px',
-                'position': 'absolute',
-                'top': '10px',
-                'right': '10px',
-                'color': '#333'},
-            searchable=True,
-            clearable=True,
-    ),
-
-        dcc.Dropdown(
-    id='country-dropdown',
-    options=[{'label': row['NOC'], 'value': row['NOC']} for index, row in df_medal_counts.iterrows()],
-    value='GBR',
-    style={"color": "#333",
-        "text-align": "center"}
-    ),
-
-    html.Div(id='country-medal-profile',
-            style={"text-align": "center"}),
+    dbc.Row([
+        dbc.Col([
+            dcc.Dropdown(
+                id='athlete-search-dropdown',
+                options=[{'label': name, 'value': name} for name in athlete_names],
+                placeholder="Search for an athlete",
+                style={'color': '#333',
+                    'text-align': 'center'},
+                searchable=True,
+                clearable=True,
+            ),
+    ], width={"size": 6, "order": 1}),
+        dbc.Col([
+            dcc.Dropdown(
+                id='country-dropdown',
+                options=[{'label': row['NOC'], 'value': row['NOC']} for index, row in df_medal_counts.iterrows()],
+                value='GBR',
+                style={"color": "#333",
+                    "text-align": "center"}
+            ),
+            html.Div(id='country-medal-profile',
+                style={"text-align": "center"}),
+    ], width={"size": 6, "order": 2}),
+    ]),
     
     # Dropdown and Graphs
     dbc.Row([
@@ -203,7 +211,22 @@ app.layout = dbc.Container([
             dcc.Graph(id="seasonal-plot", figure={}),
             dcc.Graph(id="age-data", figure={}),
             dcc.Graph(id='age-distribution-plot', figure={},
-            )
+            ),
+            dcc.Dropdown(
+        id='time-period-dropdown',
+        options=[
+            {'label': 'Pre-WW1', 'value': 'pre_ww1'},
+            {'label': 'Between Wars', 'value': 'between_wars'},
+            {'label': 'Post-WW2 Pre-2000', 'value': 'post_ww2_pre_2000'},
+            {'label': 'Post-2000', 'value': 'post_2000'}
+        ],
+        style={"color": "#333"},
+        value=['pre_ww1'],  # Default value
+        multi=True  # Allow multiple selections
+        ),
+            dcc.Graph(
+        id='age-distribution-scatter'  # The ID matches the Output of the callback
+    )
         ], width=12),
     ]),
 ])
@@ -250,7 +273,7 @@ for year in host_years:
     host_year_fig.add_vline(x=year,
                             line_dash="dash",
                             line_color="red",
-                            opacity=0.3,
+                            opacity=0.7,
                             annotation_text=f"UK hosted year {year}",)
 
 gold_silver_bronze_fig = px.histogram(medal_summary, 
@@ -263,18 +286,6 @@ gold_silver_bronze_fig = px.histogram(medal_summary,
     hover_data=['value', 'variable'],
     hover_name='variable'
     )
-
-#Behövs ej?
-#fig_all = prepare_data_and_plots()
-
-#app.layout = html.Div([
-#     html.H1("UK Athletes Age Distribution Across Different Eras"),
-#     dcc.Graph(
-#         id='age-distribution-plot',
-#         figure=fig_all
-#     )
-# ])
-
 
 @callback(
     Output("medal_graph", "figure"),
@@ -289,11 +300,11 @@ def medal_graph(sport):
         filtrted_df = medal_trend_df[sport]
 
     fig = px.line(filtrted_df,
-                  x=filtrted_df.index,
-                  y=filtrted_df.columns,
-                  title=f"Medal trend for {', '.join(filtrted_df.columns)}",
-                  labels={'index': 'year', 'value': 'medals', 'variable': 'sport'},
-                  color_discrete_sequence=['navy', 'red', 'green', 'orange'])
+                x=filtrted_df.index,
+                y=filtrted_df.columns,
+                title=f"Medal trend for {', '.join(filtrted_df.columns)}",
+                labels={'index': 'year', 'value': 'medals', 'variable': 'sport'},
+                color_discrete_sequence=['navy', 'red', 'green', 'orange'])
     
     fig.update_layout(
         xaxis=dict(
@@ -302,9 +313,7 @@ def medal_graph(sport):
             dtick=4,
         )
     )
-
     return fig
-
 
 @callback(
     Output('country-medal-profile', 'children'),
@@ -365,15 +374,34 @@ def age_graph(vadsom):
     fig = age_data()
     return fig
 
-# @callback(
-#     Output("closing_graph", "figure"),
-#     Input("multi_dropdown", "value")
-# )
-# def update_closing_graph(symbols):
-#     if symbols is None: symbols = []
-#     df = stocks[stocks["Symbols"].isin(symbols)]
-#     return px.line(df, x=df.index, y="Close", color="Symbols")
+@app.callback(
+    Output('age-distribution-scatter', 'figure'),
+    [Input('time-period-dropdown', 'value')]
+)
+def update_graph(selected_periods):
+    if not isinstance(selected_periods, list):
+        selected_periods = [selected_periods]
 
+    frames = {
+        'pre_ww1': pre_ww1.copy().assign(Period='Pre-WW1'),
+        'between_wars': between_wars.copy().assign(Period='Between Wars'),
+        'post_ww2_pre_2000': post_ww2_pre_2000.copy().assign(Period='Post-WW2 Pre-2000'),
+        'post_2000': post_2000.copy().assign(Period='Post-2000')
+    }
+
+    df_combined = pd.concat([frames[period] for period in selected_periods if period in frames])
+    df_age_counts = df_combined.groupby(['Age', 'Period']).size().reset_index(name='Count')
+
+    fig = px.scatter(df_age_counts, x='Age', y='Count', color='Period',
+                    title='Age Distribution of UK Athletes Over Historical Periods')
+
+    fig.update_layout(
+        xaxis_title='Age',
+        yaxis_title='Number of Athletes',
+        legend_title='Historical Period',
+    )
+
+    return fig
 
 if __name__ == '__main__':
     app.run_server(debug=True)

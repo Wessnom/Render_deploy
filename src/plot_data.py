@@ -35,7 +35,6 @@ def prepare_data_and_plots():
 
 # UK seasonal grafen
 
-
 def seasonal_graph():
     UK_seasonal = UK_athletes[UK_athletes['Medal'].notna()].groupby(['Year', 'Season'])['Medal'].count().reset_index()
     UK_seasonal.rename(columns={'Medal': 'Total Medals'}, inplace=True)

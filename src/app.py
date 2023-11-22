@@ -1,14 +1,3 @@
-"""
-    Ok. Som ni ser nedan så har jag tagit myyycket från senaste Dashgenomgången som utgångspunkt. Basically ctrl+c ctrl+v.
-    Försöker testa få in lite plots och union jack som sidbakgrund på något vis.
-    
-    Vad vill vi annars att sidan ska kunna visa? Alltså jag antar typ alla grafer, men på vilket sätt?
-    Jag tycker personligen att det känns konstigt att ersätta px inbyggda valbarhetsfunktionalitet
-    med menyer i Dash. Men helt klart behöver vi kunna välja mellan grejer, eller vill vi ha allt sammanställt på
-    "startsidan", liksom side-by-side? Ska vi ha någon förklarande text? //ISAK
-"""
-
-
 from dash import Dash, dcc, html, Input, Output, callback, dash_table, dash
 import dash_bootstrap_components as dbc
 import plotly.express as px
@@ -39,14 +28,14 @@ gb_athletics = df_UK[df_UK['Sport'] == 'Athletics']
 
 pre_ww1 = df_UK[df_UK['Year'] < 1914]
 between_wars = df_UK[(df_UK['Year'] >= 1914) & (df_UK['Year'] < 1945)]
-post_ww2_pre_2000 = df_UK[(df_UK['Year'] >= 1945) & (df_UK['Year'] < 2000)]
-post_2000 = df_UK[df_UK['Year'] >= 2000]
+post_ww2_pre_1989 = df_UK[(df_UK['Year'] >= 1945) & (df_UK['Year'] < 1989)]
+post_1989 = df_UK[df_UK['Year'] >= 1989]
 
 dfs = {
     'pre_ww1': pre_ww1,
     'between_wars': between_wars,
-    'post_ww2_pre_2000': post_ww2_pre_2000,
-    'post_2000': post_2000
+    'post_ww2_pre_1989': post_ww2_pre_1989,
+    'post_1989': post_1989
 }
 
 medal_trend_rowing = gb_rowing.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
@@ -74,9 +63,7 @@ for sport in sports:
         }
         medal_summary.append(s_dict)
 
-
 athlete_names = df_all_countries['Name'].unique()
-
 
 df_medals = df_all_countries.dropna(subset=['Medal'])
 df_medal_counts = df_medals.pivot_table(index='NOC', columns='Medal', aggfunc='size', fill_value=0)
@@ -127,17 +114,21 @@ gb_athletes_table = dash_table.DataTable(
 
 
 app.layout = dbc.Container([
+    
+    # Background
         html.Div([
         html.Img(src='/assets/UK-flag.png',
                 style={
-            "position": "absolute",
-            "left": "0",
-            "opacity": "0.2",
-            "width": "100%",
-            "height": "100%",
+                    "position": "absolute",
+                    "left": "0",
+                    "opacity": "0.2",
+                    "width": "100%",
+                    "height": "100%",
                 }
             )
         ]),
+        
+    # Row for the title and union-jack/OS flag
     dbc.Row([
             dbc.Col([
                 html.Div([
@@ -169,6 +160,8 @@ app.layout = dbc.Container([
             gb_athletes_table
         ], width=12)
     ]),
+    
+    # Row for the dropdowns
     dbc.Row([
         dbc.Col([
             dcc.Dropdown(
@@ -180,6 +173,8 @@ app.layout = dbc.Container([
                 searchable=True,
                 clearable=True,
             ),
+            html.Div(id='athlete-medals',
+                style={"text-align": "center"}),
     ], width={"size": 6, "order": 1}),
         dbc.Col([
             dcc.Dropdown(
@@ -194,7 +189,7 @@ app.layout = dbc.Container([
     ], width={"size": 6, "order": 2}),
     ]),
     
-    # Dropdown and Graphs
+    # Another dropdown and all Graphs
     dbc.Row([
         dbc.Col([
             dcc.Dropdown(
@@ -217,19 +212,21 @@ app.layout = dbc.Container([
         options=[
             {'label': 'Pre-WW1', 'value': 'pre_ww1'},
             {'label': 'Between Wars', 'value': 'between_wars'},
-            {'label': 'Post-WW2 Pre-2000', 'value': 'post_ww2_pre_2000'},
-            {'label': 'Post-2000', 'value': 'post_2000'}
+            {'label': 'Post-WW2 Pre-1989', 'value': 'post_ww2_pre_1989'},
+            {'label': 'Post-1989', 'value': 'post_1989'}
         ],
         style={"color": "#333"},
-        value=['pre_ww1'],  # Default value
-        multi=True  # Allow multiple selections
+        value=['pre_ww1', 'between_wars', 'post_ww2_pre_1989', 'post_1989'],
+        multi=True
         ),
             dcc.Graph(
-        id='age-distribution-scatter'  # The ID matches the Output of the callback
+        id='age-distribution-scatter'
     )
         ], width=12),
     ]),
 ])
+
+# Some of our figs
 
 medal_trend_fig = px.line(medal_trend_df, 
     x=medal_trend_df.index,
@@ -250,7 +247,6 @@ medal_trend_fig.update_layout(
         dtick=4,
     )
 )
-
 
 host_years = [1908, 1948, 2012]
 
@@ -292,7 +288,6 @@ gold_silver_bronze_fig = px.histogram(medal_summary,
     Input("single_dropdown", "value")
 )
 
-#Drop down menu for different sports
 def medal_graph(sport):
     if not sport:
         filtrted_df = medal_trend_df
@@ -385,8 +380,8 @@ def update_graph(selected_periods):
     frames = {
         'pre_ww1': pre_ww1.copy().assign(Period='Pre-WW1'),
         'between_wars': between_wars.copy().assign(Period='Between Wars'),
-        'post_ww2_pre_2000': post_ww2_pre_2000.copy().assign(Period='Post-WW2 Pre-2000'),
-        'post_2000': post_2000.copy().assign(Period='Post-2000')
+        'post_ww2_pre_1989': post_ww2_pre_1989.copy().assign(Period='Post-WW2 Pre-1989'),
+        'post_1989': post_1989.copy().assign(Period='Post-1989')
     }
 
     df_combined = pd.concat([frames[period] for period in selected_periods if period in frames])

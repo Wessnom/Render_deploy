@@ -9,22 +9,27 @@ UK_athletes = athlete_events[athlete_events['NOC'] == 'GBR']
 def prepare_data_and_plots():
     pre_ww1 = UK_athletes[UK_athletes['Year'] < 1914]
     between_wars = UK_athletes[(UK_athletes['Year'] >= 1914) & (UK_athletes['Year'] < 1945)]
-    post_ww2_pre_2000 = UK_athletes[(UK_athletes['Year'] >= 1945) & (UK_athletes['Year'] < 2000)]
-    post_2000 = UK_athletes[UK_athletes['Year'] >= 2000]
+    post_ww2_pre_1989 = UK_athletes[(UK_athletes['Year'] >= 1945) & (UK_athletes['Year'] < 1989)]
+    post_1989 = UK_athletes[UK_athletes['Year'] >= 1989]
     
     fig_all = make_subplots()
     
     fig_all.add_trace(go.Histogram(x=pre_ww1['Age'], nbinsx=50, name="< 1914, Age Distribution of UK's Athletes"))
     fig_all.add_trace(go.Histogram(x=between_wars['Age'], nbinsx=50, name="1914-1940, Age Distribution of UK's Athletes between WWI & WWII" ))
-    fig_all.add_trace(go.Histogram(x=post_ww2_pre_2000['Age'], nbinsx=50, name="1945 - 2000, Age Distribution of UK's Athletes After WWII"))
-    fig_all.add_trace(go.Histogram(x=post_2000['Age'], nbinsx=50, name="2000 Onwards, Age Distribution of UK's Athletes"))
+    fig_all.add_trace(go.Histogram(x=post_ww2_pre_1989['Age'], nbinsx=50, name="1945 - 1989, Age Distribution of UK's Athletes After WWII"))
+    fig_all.add_trace(go.Histogram(x=post_1989['Age'], nbinsx=50, name="1989 Onwards, Age Distribution of UK's Athletes"))
 
     fig_all.update_layout(title_text="Age Distribution of UK's Athletes Across Different Eras",
                         xaxis_title_text="Age",
                         yaxis_title_text="Number of Athletes",
                         bargap=0.02,
                         bargroupgap=0.01,
-                        hovermode="x unified")
+                        hovermode="x unified",
+                        legend=dict(
+                                yanchor="top",
+                                y=0.99,
+                                xanchor="right",
+                                x=0.99))
 
     return fig_all
 

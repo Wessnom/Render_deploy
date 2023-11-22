@@ -31,6 +31,7 @@ dark_theme_layout = {
 pio.templates["darkly"] = go.layout.Template(layout=dark_theme_layout)
 pio.templates.default = "darkly"
 
+df_all_countries = pd.read_csv("athlete_events.csv")
 df_UK = pd.read_csv("athlete_events.csv").query("NOC == 'GBR'")
 
 gb_rowing = df_UK[df_UK['Sport'] == 'Rowing']
@@ -64,10 +65,10 @@ for sport in sports:
         medal_summary.append(s_dict)
 
 
-athlete_names = df_UK['Name'].unique()
+athlete_names = df_all_countries['Name'].unique()
 
 
-df_medals = df_UK.dropna(subset=['Medal'])
+df_medals = df_all_countries.dropna(subset=['Medal'])
 
 df_medal_counts = df_medals.pivot_table(index='NOC', columns='Medal', aggfunc='size', fill_value=0)
 
@@ -178,10 +179,12 @@ app.layout = dbc.Container([
     id='country-dropdown',
     options=[{'label': row['NOC'], 'value': row['NOC']} for index, row in df_medal_counts.iterrows()],
     value='GBR',
-    style={"color": "#333"}
+    style={"color": "#333",
+        "text-align": "center"}
     ),
 
-    html.Div(id='country-medal-profile'),
+    html.Div(id='country-medal-profile',
+            style={"text-align": "center"}),
     
     # Dropdown and Graphs
     dbc.Row([
@@ -305,7 +308,7 @@ def medal_graph(sport):
 
 @callback(
     Output('country-medal-profile', 'children'),
-    [Input('country-dropdown', 'value')]
+    Input('country-dropdown', 'value')
 )
 def update_country_profile(selected_country):
     country_data = df_medal_counts[df_medal_counts['NOC'] == selected_country]

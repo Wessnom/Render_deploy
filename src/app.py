@@ -86,6 +86,7 @@ app = Dash(__name__,
         external_stylesheets=[dbc.themes.DARKLY],
         meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"},],)
 
+server = app.server
 
 gb_athletes_table = dash_table.DataTable(
     id='gb_athletes_table',

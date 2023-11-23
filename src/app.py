@@ -7,7 +7,16 @@ from dash.dependencies import Input, Output, validate_callback, State
 import plotly.graph_objects as go
 import plotly.io as pio
 
-from plot_data import prepare_data_and_plots, seasonal_graph, age_data
+from plot_data import get_data, get_medal_counts, get_medal_trend_df, medal_trend_fig, host_year_fig, gold_silver_bronze_fig, age_distri_eras_bar, age_distri_eras_scatter, seasonal_graph, age_data
+
+df_all_countries = get_data()[0]
+df_UK = get_data()[1]
+
+medals_per_year = df_UK.dropna(subset=['Medal']).groupby('Year').size().reset_index(name='Count')
+sports = ['Cycling', 'Rowing', 'Sailing', 'Athletics']
+athlete_names = df_all_countries['Name'].unique()
+df_medal_counts = get_medal_counts()
+medal_trend_df = get_medal_trend_df()
 
 dark_theme_layout = {
     "plot_bgcolor": "#343a40",
@@ -17,64 +26,6 @@ dark_theme_layout = {
 }
 pio.templates["darkly"] = go.layout.Template(layout=dark_theme_layout)
 pio.templates.default = "darkly"
-
-df_all_countries = pd.read_csv("athlete_events.csv")
-df_UK = pd.read_csv("athlete_events.csv").query("NOC == 'GBR'")
-
-gb_rowing = df_UK[df_UK['Sport'] == 'Rowing']
-gb_cycling = df_UK[df_UK['Sport'] == 'Cycling']
-gb_sailing = df_UK[df_UK['Sport'] == 'Sailing']
-gb_athletics = df_UK[df_UK['Sport'] == 'Athletics']
-
-pre_ww1 = df_UK[df_UK['Year'] < 1914]
-between_wars = df_UK[(df_UK['Year'] >= 1914) & (df_UK['Year'] < 1945)]
-post_ww2_pre_1989 = df_UK[(df_UK['Year'] >= 1945) & (df_UK['Year'] < 1989)]
-post_1989 = df_UK[df_UK['Year'] >= 1989]
-
-dfs = {
-    'pre_ww1': pre_ww1,
-    'between_wars': between_wars,
-    'post_ww2_pre_1989': post_ww2_pre_1989,
-    'post_1989': post_1989
-}
-
-medal_trend_rowing = gb_rowing.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
-medal_trend_cycling = gb_cycling.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
-medal_trend_sailing = gb_sailing.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
-medal_trend_athletics = gb_athletics.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
-medals_per_year = df_UK.dropna(subset=['Medal']).groupby('Year').size().reset_index(name='Count')
-
-medal_summary = []
-sports = ['Cycling', 'Rowing', 'Sailing', 'Athletics']
-
-for sport in sports:
-    sport_data = df_UK[df_UK['Sport'] == sport]
-
-    for gender in ['M', 'F']:
-        medals = sport_data[sport_data['Sex'] == gender]['Medal'].value_counts()
-
-        s_dict = {
-            'Sport': sport,
-            'Gender': 'Men' if gender == 'M' else 'Women',
-            'Gold': medals.get('Gold', 0),
-            'Silver': medals.get('Silver', 0),
-            'Bronze': medals.get('Bronze', 0),
-            'Total': medals.sum() 
-        }
-        medal_summary.append(s_dict)
-
-athlete_names = df_all_countries['Name'].unique()
-
-df_medals = df_all_countries.dropna(subset=['Medal'])
-df_medal_counts = df_medals.pivot_table(index='NOC', columns='Medal', aggfunc='size', fill_value=0)
-df_medal_counts.columns = ['Bronze', 'Silver', 'Gold']
-df_medal_counts.reset_index(inplace=True)
-medal_summary = pd.DataFrame(medal_summary)
-
-medal_trend_df = pd.DataFrame({'Rowing': medal_trend_rowing,
-                            'Cycling': medal_trend_cycling,
-                            'Sailing': medal_trend_sailing,
-                            'Athletics': medal_trend_athletics}).fillna(0)
 
 app = Dash(__name__,
         external_stylesheets=[dbc.themes.DARKLY],
@@ -189,25 +140,24 @@ app.layout = dbc.Container([
     ], width={"size": 6, "order": 2}),
     ]),
     
-    # Another dropdown and all Graphs
     dbc.Row([
         dbc.Col([
-            dcc.Dropdown(
+            dcc.Dropdown( # Dropdown for choosing sports in graph 1
                 id="single_dropdown", 
                 multi=True, 
                 searchable=True, 
                 className="mb-1",
                 options=[{'label': sport, 'value': sport} for sport in medal_trend_df],
                 style={"color": "#333"}
+            ), 
+                dcc.Graph(id="medal_graph", figure={}), # All our graphs
+                dcc.Graph(id="host_graph", figure={}),
+                dcc.Graph(id="gsb_graph", figure={}),
+                dcc.Graph(id="seasonal-plot", figure={}),
+                dcc.Graph(id="age-data", figure={}),
+                dcc.Graph(id='age-distribution-plot', figure={},
             ),
-            dcc.Graph(id="medal_graph", figure={}),
-            dcc.Graph(id="host_graph", figure={}),
-            dcc.Graph(id="gsb_graph", figure={}),
-            dcc.Graph(id="seasonal-plot", figure={}),
-            dcc.Graph(id="age-data", figure={}),
-            dcc.Graph(id='age-distribution-plot', figure={},
-            ),
-            dcc.Dropdown(
+            dcc.Dropdown( # Dropdown for the last graph
         id='time-period-dropdown',
         options=[
             {'label': 'Pre-WW1', 'value': 'pre_ww1'},
@@ -219,96 +169,12 @@ app.layout = dbc.Container([
         value=['pre_ww1', 'between_wars', 'post_ww2_pre_1989', 'post_1989'],
         multi=True
         ),
-            dcc.Graph(
-        id='age-distribution-scatter'
-    )
+                dcc.Graph(id='age-distribution-scatter')
         ], width=12),
     ]),
 ])
 
-# Some of our figs
-
-medal_trend_fig = px.line(medal_trend_df, 
-    x=medal_trend_df.index,
-    y=medal_trend_df.columns,
-    title=f"Medal trend for {', '.join(medal_trend_df.columns)}",
-    labels={'index': 'Year',
-            'value': 'Medals',
-            'variable': 'Sport'},
-    color_discrete_sequence=['navy',
-                            'red',
-                            'green',
-                            'orange'],
-)
-medal_trend_fig.update_layout(
-    xaxis = dict(
-        tickmode='linear',
-        tick0=1896,
-        dtick=4,
-    )
-)
-
-host_years = [1908, 1948, 2012]
-
-host_year_fig = px.line(medals_per_year,
-            x='Year',
-            y='Count',
-            title='Great Britain Olympic Medals by Year and Hosted Years',
-            labels={'Year': 'Year',
-                    'Count': 'Medals'},
-            hover_name='Year',
-            hover_data={'Year': False},
-            )
-
-host_year_fig.update_layout(xaxis=dict(tickangle=70,
-                            tickmode='array',
-                            tickvals=medals_per_year['Year'].unique(),
-                            ticktext=medals_per_year['Year'].unique())
-                )
-for year in host_years:
-    host_year_fig.add_vline(x=year,
-                            line_dash="dash",
-                            line_color="red",
-                            opacity=0.7,
-                            annotation_text=f"UK hosted year {year}",)
-
-gold_silver_bronze_fig = px.histogram(medal_summary, 
-    x='Sport',
-    y=['Gold', 'Silver', 'Bronze'],
-    title=f"Medal summary for {', '.join(medal_summary['Sport'].unique())}",
-    labels={'index': 'Year', 'value': 'Medals', 'variable': 'Sport'},
-    barmode='group',
-    color_discrete_sequence=['gold', 'silver', 'brown'],
-    hover_data=['value', 'variable'],
-    hover_name='variable'
-    )
-
-@callback(
-    Output("medal_graph", "figure"),
-    Input("single_dropdown", "value")
-)
-
-def medal_graph(sport):
-    if not sport:
-        filtrted_df = medal_trend_df
-    else:
-        filtrted_df = medal_trend_df[sport]
-
-    fig = px.line(filtrted_df,
-                x=filtrted_df.index,
-                y=filtrted_df.columns,
-                title=f"Medal trend for {', '.join(filtrted_df.columns)}",
-                labels={'index': 'year', 'value': 'medals', 'variable': 'sport'},
-                color_discrete_sequence=['navy', 'red', 'green', 'orange'])
-    
-    fig.update_layout(
-        xaxis=dict(
-            tickmode='linear',
-            tick0=1896,
-            dtick=4,
-        )
-    )
-    return fig
+# ---------------CALLBACKS----------------
 
 @callback(
     Output('country-medal-profile', 'children'),
@@ -332,34 +198,45 @@ def update_country_profile(selected_country):
     return profile
 
 @callback(
+    Output("medal_graph", "figure"),
+    Input("single_dropdown", "value")
+)
+
+def medal_graph(sport):
+    fig = medal_trend_fig()
+    return fig
+
+@callback(
     Output("host_graph", "figure"),
     Input("single_dropdown", "value")
 )
 def host_graph(sport):
-    return host_year_fig
+    fig = host_year_fig()
+    return fig
 
 @callback(
     Output("gsb_graph", "figure"),
     Input("single_dropdown", "value")
 )
 def gsb_graph(sport):
-    return gold_silver_bronze_fig
+    fig = gold_silver_bronze_fig()
+    return fig
 
 @app.callback(
     Output('age-distribution-plot', 'figure'),
     Input("single_dropdown", "value")
 )
 def update_graph(input_value):
-    fig_all = prepare_data_and_plots()
-    return fig_all
+    fig = age_distri_eras_bar()
+    return fig
 
 @app.callback(
     Output("seasonal-plot", "figure"),
     Input("single_dropdown", "value")
 )
 def seasonal(seasonal):
-    fig_all = seasonal_graph()
-    return fig_all
+    fig = seasonal_graph()
+    return fig
 
 @app.callback(
     Output("age-data", "figure"),
@@ -373,29 +250,8 @@ def age_graph(vadsom):
     Output('age-distribution-scatter', 'figure'),
     [Input('time-period-dropdown', 'value')]
 )
-def update_graph(selected_periods):
-    if not isinstance(selected_periods, list):
-        selected_periods = [selected_periods]
-
-    frames = {
-        'pre_ww1': pre_ww1.copy().assign(Period='Pre-WW1'),
-        'between_wars': between_wars.copy().assign(Period='Between Wars'),
-        'post_ww2_pre_1989': post_ww2_pre_1989.copy().assign(Period='Post-WW2 Pre-1989'),
-        'post_1989': post_1989.copy().assign(Period='Post-1989')
-    }
-
-    df_combined = pd.concat([frames[period] for period in selected_periods if period in frames])
-    df_age_counts = df_combined.groupby(['Age', 'Period']).size().reset_index(name='Count')
-
-    fig = px.scatter(df_age_counts, x='Age', y='Count', color='Period',
-                    title='Age Distribution of UK Athletes Over Historical Periods')
-
-    fig.update_layout(
-        xaxis_title='Age',
-        yaxis_title='Number of Athletes',
-        legend_title='Historical Period',
-    )
-
+def age_distri_eras_scat(selected_periods):
+    fig = age_distri_eras_scatter(selected_periods)
     return fig
 
 if __name__ == '__main__':

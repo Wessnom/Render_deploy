@@ -203,7 +203,7 @@ def update_country_profile(selected_country):
 )
 
 def medal_graph(sport):
-    fig = medal_trend_fig()
+    fig = medal_trend_fig(sport)
     return fig
 
 @callback(

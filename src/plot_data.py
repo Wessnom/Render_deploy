@@ -4,12 +4,14 @@ import pandas as pd
 from plotly.subplots import make_subplots
 
 # Data import
+
 def get_data():
     athlete_events = pd.read_csv("athlete_events.csv")
     UK_athletes = athlete_events[athlete_events['NOC'] == 'GBR']
     return athlete_events, UK_athletes
 
 # Variables structure
+
 athlete_events = get_data()[0]
 UK_athletes = athlete_events[athlete_events['NOC'] == 'GBR']
 
@@ -43,11 +45,17 @@ for sport in sports:
 medal_summary = pd.DataFrame(medal_summary)
 
 # Func variables
-def get_medal_trend_df():
-    medal_trend_df = pd.DataFrame({'Rowing': gb_rowing.dropna(subset=['Medal']).groupby('Year')['Medal'].count(),
-                            'Cycling': gb_cycling.dropna(subset=['Medal']).groupby('Year')['Medal'].count(),
-                            'Sailing': gb_sailing.dropna(subset=['Medal']).groupby('Year')['Medal'].count(),
-                            'Athletics': gb_athletics.dropna(subset=['Medal']).groupby('Year')['Medal'].count()}).fillna(0)
+
+def get_medal_trend_df(): # Very wierd, tried to "one-line" it, but the functionality in the choose sport dropdown dissapeared (AttributeError: 'Series' object has no attribute 'columns')
+    medal_trend_rowing = gb_rowing.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
+    medal_trend_cycling = gb_cycling.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
+    medal_trend_sailing = gb_sailing.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
+    medal_trend_athletics = gb_athletics.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
+    
+    medal_trend_df = pd.DataFrame({'Rowing': medal_trend_rowing,
+                            'Cycling': medal_trend_cycling,
+                            'Sailing': medal_trend_sailing,
+                            'Athletics': medal_trend_athletics}).fillna(0)
     return medal_trend_df
 
 def get_medal_counts():
@@ -57,11 +65,17 @@ def get_medal_counts():
     return df_medal_counts
 
 # Medal trend fig
-def medal_trend_fig():
-    medal_trend_fig = px.line(get_medal_trend_df(), 
-        x=get_medal_trend_df().index,
-        y=get_medal_trend_df().columns,
-        title=f"Medal trend for {', '.join(get_medal_trend_df().columns)}",
+
+def medal_trend_fig(sport):
+    if not sport:
+        filtered_df = get_medal_trend_df()
+    else:
+        filtered_df = get_medal_trend_df()[sport]
+        
+    medal_trend_fig = px.line(filtered_df, 
+        x=filtered_df.index,
+        y=filtered_df.columns,
+        title=f"Medal trend for {', '.join(filtered_df.columns)}",
         labels={'index': 'Year',
                 'value': 'Medals',
                 'variable': 'Sport'},
@@ -219,6 +233,8 @@ def get_eras():
 
 # print(get_medal_trend_df())
 
-# medal_trend_fig().show()
+# medal_trend_fig(sport).show()
 
 # print(get_medal_counts())
+
+# print(gb_athletics)

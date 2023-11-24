@@ -197,10 +197,10 @@ def age_distri_eras_scatter(selected_periods):
         selected_periods = [selected_periods]
 
     frames = {
-        'pre_ww1': get_eras()[0].copy().assign(Period='Pre-WW1'),
-        'between_wars': get_eras()[1].copy().assign(Period='Between Wars'),
-        'post_ww2_pre_1989': get_eras()[2].copy().assign(Period='Post-WW2 Pre-1989'),
-        'post_1989': get_eras()[3].copy().assign(Period='Post-1989')
+        'pre_ww1': get_eras()[0].copy().assign(Period="< 1914, Age Distribution of UK's Athletes"),
+        'between_wars': get_eras()[1].copy().assign(Period="1914-1940, Age Distribution of UK's Athletes between WWI & WWII"),
+        'post_ww2_pre_1989': get_eras()[2].copy().assign(Period="1945 - 1989, Age Distribution of UK's Athletes After WWII"),
+        'post_1989': get_eras()[3].copy().assign(Period="1989 Onwards, Age Distribution of UK's Athletes")
     }
 
     df_combined = pd.concat([frames[period] for period in selected_periods if period in frames])
@@ -216,6 +216,11 @@ def age_distri_eras_scatter(selected_periods):
         xaxis_title='Age',
         yaxis_title='Number of Athletes',
         legend_title='Historical Period',
+        legend=dict(
+                                yanchor="top",
+                                y=0.99,
+                                xanchor="right",
+                                x=0.99)
     )
 
     return fig
@@ -228,13 +233,3 @@ def get_eras():
     post_ww2_pre_1989 = UK_athletes[(UK_athletes['Year'] >= 1945) & (UK_athletes['Year'] < 1989)]
     post_1989 = UK_athletes[UK_athletes['Year'] >= 1989]
     return [pre_ww1, between_wars, post_ww2_pre_1989, post_1989]
-
-## TESTS
-
-# print(get_medal_trend_df())
-
-# medal_trend_fig(sport).show()
-
-# print(get_medal_counts())
-
-# print(gb_athletics)

@@ -1,9 +1,6 @@
-from dash import Dash, dcc, html, Input, Output, callback, dash_table, dash
+from dash import Dash, dcc, html, Input, Output, callback, dash_table
 import dash_bootstrap_components as dbc
-import plotly.express as px
-import pandas as pd
-from dash_bootstrap_templates import load_figure_template
-from dash.dependencies import Input, Output, validate_callback, State
+from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import plotly.io as pio
 
@@ -158,17 +155,17 @@ app.layout = dbc.Container([
                 dcc.Graph(id='age-distribution-plot', figure={},
             ),
             dcc.Dropdown( # Dropdown for the last graph
-        id='time-period-dropdown',
-        options=[
-            {'label': 'Pre-WW1', 'value': 'pre_ww1'},
-            {'label': 'Between Wars', 'value': 'between_wars'},
-            {'label': 'Post-WW2 Pre-1989', 'value': 'post_ww2_pre_1989'},
-            {'label': 'Post-1989', 'value': 'post_1989'}
-        ],
-        style={"color": "#333"},
-        value=['pre_ww1', 'between_wars', 'post_ww2_pre_1989', 'post_1989'],
-        multi=True
-        ),
+                id='time-period-dropdown',
+                options=[
+                    {'label': 'Pre-WW1', 'value': 'pre_ww1'},
+                    {'label': 'Between Wars', 'value': 'between_wars'},
+                    {'label': 'Post-WW2 Pre-1989', 'value': 'post_ww2_pre_1989'},
+                    {'label': 'Post-1989', 'value': 'post_1989'}
+                ],
+                style={"color": "#333"},
+                value=['pre_ww1', 'between_wars', 'post_ww2_pre_1989', 'post_1989'],
+                multi=True
+            ),
                 dcc.Graph(id='age-distribution-scatter')
         ], width=12),
     ]),
